@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Chi Tiêu</title>
+  <meta name="description" content="Ứng dụng quản lý chi tiêu cá nhân" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#111317" media="(prefers-color-scheme: dark)" />
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Chi Tiêu" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" id="prevMonth" aria-label="Tháng trước">‹</button>
+    <h1 id="monthLabel">Tháng</h1>
+    <button class="icon-btn" id="nextMonth" aria-label="Tháng sau">›</button>
+  </header>
+
+  <main>
+    <!-- TAB: GIAO DỊCH -->
+    <section class="view" id="view-tx">
+      <div class="summary card">
+        <div class="summary-row">
+          <div>
+            <div class="label">Thu</div>
+            <div class="value income" id="sumIncome">0 ₫</div>
+          </div>
+          <div>
+            <div class="label">Chi</div>
+            <div class="value expense" id="sumExpense">0 ₫</div>
+          </div>
+        </div>
+        <div class="balance">
+          <span class="label">Số dư tháng</span>
+          <span class="value" id="sumBalance">0 ₫</span>
+        </div>
+      </div>
+      <div id="txList"></div>
+    </section>
+
+    <!-- TAB: THỐNG KÊ -->
+    <section class="view" id="view-stats" hidden>
+      <div class="segmented" id="statsType">
+        <button data-type="expense" class="active">Chi</button>
+        <button data-type="income">Thu</button>
+      </div>
+      <div class="card chart-card">
+        <div id="chart"></div>
+      </div>
+      <div class="card" id="statsLegend"></div>
+    </section>
+
+    <!-- TAB: CÀI ĐẶT -->
+    <section class="view" id="view-settings" hidden>
+      <h2 class="section-title">Danh mục</h2>
+      <div class="segmented" id="catType">
+        <button data-type="expense" class="active">Chi</button>
+        <button data-type="income">Thu</button>
+      </div>
+      <div class="card list" id="catList"></div>
+      <button class="btn secondary block" id="addCat">+ Thêm danh mục</button>
+
+      <h2 class="section-title">Dữ liệu</h2>
+      <div class="card list">
+        <button class="list-item" id="exportBtn"><span>📤</span><span class="grow">Xuất file backup</span></button>
+        <button class="list-item" id="importBtn"><span>📥</span><span class="grow">Nhập file backup</span></button>
+        <button class="list-item danger" id="wipeBtn"><span>🗑️</span><span class="grow">Xóa toàn bộ dữ liệu</span></button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden />
+      <p class="hint">Dữ liệu chỉ lưu trên máy này. Hãy xuất backup định kỳ. Dùng file backup để chuyển dữ liệu sang máy khác.</p>
+      <p class="hint" id="txCount"></p>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Thêm giao dịch">+</button>
+
+  <nav class="tabbar">
+    <button data-tab="tx" class="active"><span>📒</span>Giao dịch</button>
+    <button data-tab="stats"><span>📊</span>Thống kê</button>
+    <button data-tab="settings"><span>⚙️</span>Cài đặt</button>
+  </nav>
+
+  <!-- SHEET: THÊM / SỬA GIAO DỊCH -->
+  <div class="sheet-backdrop" id="txSheet" hidden>
+    <form class="sheet" id="txForm" autocomplete="off">
+      <div class="sheet-header">
+        <button type="button" class="link-btn" data-close>Hủy</button>
+        <h3 id="txSheetTitle">Thêm giao dịch</h3>
+        <button type="submit" class="link-btn strong">Lưu</button>
+      </div>
+
+      <div class="segmented" id="txType">
+        <button type="button" data-type="expense" class="active">Chi</button>
+        <button type="button" data-type="income">Thu</button>
+      </div>
+
+      <div class="amount-wrap">
+        <input id="txAmount" type="text" inputmode="numeric" placeholder="0" aria-label="Số tiền" />
+        <span class="currency">₫</span>
+        <button type="button" class="btn secondary small" id="add000">000</button>
+      </div>
+
+      <div class="cat-grid" id="txCats"></div>
+
+      <label class="field">
+        <span>Ngày</span>
+        <input id="txDate" type="date" required />
+      </label>
+      <label class="field">
+        <span>Ghi chú</span>
+        <input id="txNote" type="text" maxlength="200" placeholder="Không bắt buộc" />
+      </label>
+
+      <button type="button" class="btn danger block" id="txDelete" hidden>Xóa giao dịch</button>
+    </form>
+  </div>
+
+  <!-- SHEET: THÊM / SỬA DANH MỤC -->
+  <div class="sheet-backdrop" id="catSheet" hidden>
+    <form class="sheet" id="catForm" autocomplete="off">
+      <div class="sheet-header">
+        <button type="button" class="link-btn" data-close>Hủy</button>
+        <h3 id="catSheetTitle">Danh mục</h3>
+        <button type="submit" class="link-btn strong">Lưu</button>
+      </div>
+      <label class="field">
+        <span>Biểu tượng (emoji)</span>
+        <input id="catEmoji" type="text" maxlength="8" placeholder="🍜" required />
+      </label>
+      <label class="field">
+        <span>Tên danh mục</span>
+        <input id="catName" type="text" maxlength="40" placeholder="VD: Cà phê" required />
+      </label>
+      <button type="button" class="btn danger block" id="catDelete" hidden>Xóa danh mục</button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
